@@ -3,6 +3,8 @@ import json
 import os
 import re
 from datetime import datetime, timezone
+from http.client import HTTPConnection, HTTPException, HTTPSConnection
+from urllib.parse import urlsplit
 from pathlib import Path
 
 import psycopg
@@ -133,6 +135,48 @@ def create_app():
             devices=results,
             stale_after_seconds=stale_after,
         )
+
+    @app.post("/api/v1/devices/<device_id>/open")
+    def open_rover(device_id):
+        # A cross-origin form or navigation must not trigger a Rover startup.
+        if request.headers.get("X-Hub-Action") != "open-rover":
+            return jsonify(error="invalid_action"), 403
+
+        device = devices.get(device_id, {})
+        page = device.get("dashboard_url")
+        if device.get("device_type") != "rover" or not isinstance(page, str):
+            return jsonify(error="page_unconfigured"), 404
+        if not re.fullmatch(r"https?://[a-zA-Z0-9.-]+(?::[0-9]{1,5})?/autopilota\.html", page):
+            return jsonify(error="page_unconfigured"), 404
+        target = urlsplit(page)
+        try:
+            port = target.port
+        except ValueError:
+            return jsonify(error="page_unconfigured"), 404
+        if port == 0:
+            return jsonify(error="page_unconfigured"), 404
+
+        connection_class = HTTPSConnection if target.scheme == "https" else HTTPConnection
+        connection = connection_class(target.hostname, port, timeout=4)
+        try:
+            try:
+                connection.connect()
+            except ConnectionRefusedError:
+                return jsonify(error="socket_unavailable"), 503
+            except OSError:
+                return jsonify(error="rover_unreachable"), 503
+
+            # systemd starts the service on the incoming connection. Wait for HTTP readiness.
+            connection.sock.settimeout(25)
+            connection.request("HEAD", target.path)
+            with connection.getresponse() as response:
+                if response.status == 200:
+                    return jsonify(status="ready")
+                return jsonify(error="page_unavailable"), 502
+        except (OSError, HTTPException):
+            return jsonify(error="rover_start_failed"), 504
+        finally:
+            connection.close()
 
     @app.post("/api/v1/events")
     def receive_event():

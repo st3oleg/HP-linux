@@ -20,4 +20,26 @@ La scheda usa l'ultimo campione di stato per posizione, ora GNSS, FIX e RTCM. L'
 
 Per aggiungere il collegamento, ripeti la registrazione con `--dashboard-url` seguito dall'URL diretto del Rover, per esempio `http://INDIRIZZO-ROVER:8080/autopilota.html`. Ometti `--output` se hai già creato il file di credenziali. Applica poi la configurazione al servizio web come sopra. Usa `--clear-dashboard-url` per rimuovere il collegamento.
 
-Il link apre la pagina del Rover in una nuova scheda attraverso il collegamento diretto dal browser. Il collaudo della latenza richiede il Rover acceso.
+Per il Rover attuale usa `http://100.73.187.83:8080/autopilota.html`. L'HP e il browser devono poter raggiungere questo indirizzo su Tailscale.
+
+## Avvio su richiesta
+
+Sul Raspberry aggiorna `/home/terminator/Documents/telemetry_server.py` e copia anche `deploy/systemd/` dal repository Rover. Prima di abilitare il socket, ferma l'eventuale istanza avviata manualmente o il vecchio servizio che occupa la porta 8080. Esegui l'installazione con il Rover fermo.
+
+```bash
+cd /home/terminator/Documents
+sudo install -m 644 deploy/systemd/terminator-rover.{socket,service} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now terminator-rover.socket
+```
+
+Il socket è in ascolto sull'IP Tailscale del Rover. La prima connessione alla porta 8080 avvia `telemetry_server.py` con `BASE_TAILSCALE_HOST=100.85.248.82`. Il Rover legge le coordinate della Base da `GET /api/state`. Il servizio rimane in esecuzione dopo la chiusura della pagina. Se usi un indirizzo Tailscale diverso, aggiorna `ListenStream=` nel file socket e l'URL nell'hub. Il file di credenziali opzionale per l'invio eventi resta in `/home/terminator/.config/terminator/rover-01.env`.
+
+Aggiorna anche l'hub sull'HP e ricostruiscilo con `bash hub/start-hub.sh`. Quando premi **Apri la pagina del Rover**, l'hub attende che la pagina risponda e poi la apre direttamente nel browser. Se il Rover è irraggiungibile, l'hub chiede di controllare alimentazione, connessione Internet e Tailscale. Se la porta risponde ma la pagina non è pronta, controlla sul Raspberry:
+
+```bash
+sudo systemctl status terminator-rover.socket terminator-rover.service
+sudo journalctl -u terminator-rover.service -n 50 --no-pager
+```
+
+Per arrestare il servizio senza consentire un nuovo avvio su richiesta, ferma entrambe le unità con `sudo systemctl stop terminator-rover.socket terminator-rover.service`.

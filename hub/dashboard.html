@@ -25,6 +25,7 @@
 <script>
 const status = document.querySelector('#status');
 const devices = document.querySelector('#devices');
+const opening = new Set();
 const time = value => value ? new Date(value).toLocaleString('it-IT') : '—';
 
 function element(tag, text) {
@@ -39,6 +40,45 @@ function renderHub(hub) {
   state.className = hub.online ? 'online' : 'offline';
   card.append(element('h2', hub.name), state);
   return card;
+}
+
+async function openRover(deviceId, url, button) {
+  if (opening.has(deviceId)) return;
+  opening.add(deviceId);
+  button.disabled = true;
+  button.textContent = 'Attendo il Rover…';
+  const tab = window.open('about:blank', '_blank');
+  if (tab) tab.opener = null;
+  try {
+    const response = await fetch(`/api/v1/devices/${encodeURIComponent(deviceId)}/open`, {
+      method: 'POST',
+      headers: { 'X-Hub-Action': 'open-rover' },
+      signal: AbortSignal.timeout(35000),
+    });
+    const result = await response.json();
+    if (response.ok && result.status === 'ready') {
+      (tab && !tab.closed ? tab : window).location.href = url.href;
+      return;
+    }
+    const errors = {
+      rover_unreachable: 'Rover non raggiungibile. Controlla che sia acceso, connesso a Internet e online su Tailscale.',
+      socket_unavailable: 'La porta del Rover è chiusa. Controlla che il servizio di avvio su richiesta sia installato e abilitato.',
+      rover_start_failed: 'Il Rover ha accettato la connessione, ma il servizio non ha risposto in tempo.',
+      page_unavailable: 'Il server del Rover ha risposto, ma la pagina non è disponibile.',
+    };
+    throw new Error(errors[result.error] ?? 'Impossibile aprire la pagina del Rover.');
+  } catch (error) {
+    if (tab) tab.close();
+    window.alert(error.message);
+  } finally {
+    opening.delete(deviceId);
+    // La scheda può essere stata sostituita dall'aggiornamento periodico.
+    const currentButton = devices.querySelector(`button[data-rover="${CSS.escape(deviceId)}"]`);
+    if (currentButton) {
+      currentButton.disabled = false;
+      currentButton.textContent = 'Apri la pagina del Rover';
+    }
+  }
 }
 
 function render(device) {
@@ -88,12 +128,14 @@ function render(device) {
       const url = new URL(device.dashboard_url);
       if (['http:', 'https:'].includes(url.protocol) && !url.username && !url.password
           && url.pathname === '/autopilota.html' && !url.search && !url.hash) {
-        const link = element('a', 'Apri la pagina del Rover');
-        link.href = url.href;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
+        const pending = opening.has(device.device_id);
+        const button = element('button', pending ? 'Attendo il Rover…' : 'Apri la pagina del Rover');
+        button.type = 'button';
+        button.dataset.rover = device.device_id;
+        button.disabled = pending;
+        button.addEventListener('click', () => openRover(device.device_id, url, button));
         const actions = document.createElement('p');
-        actions.append(link);
+        actions.append(button);
         card.append(actions);
       }
     } catch {
