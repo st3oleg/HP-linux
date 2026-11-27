@@ -17,7 +17,7 @@ curl --fail http://127.0.0.1:8090/healthz
 python3 demo.py
 ```
 
-Apri [la dashboard sull'HP](http://127.0.0.1:8090) subito dopo il collaudo. Dovresti vedere due schede simulate. Dopo circa 30 secondi dalla ricezione degli ultimi eventi appariranno offline. Esegui di nuovo `python3 demo.py` per una nuova coppia di eventi.
+Apri [la dashboard sull'HP](http://127.0.0.1:8090) subito dopo il collaudo. Vedrai la scheda dell'HP e le due schede simulate. Dopo circa 30 secondi dalla ricezione degli ultimi eventi appariranno offline. Esegui di nuovo `python3 demo.py` per una nuova coppia di eventi.
 
 Il file `.env` contiene le password del database e i token dei dispositivi. `setup_demo.py` lo crea con permessi `600` su Ubuntu e conserva un file già presente. Tienine una copia protetta insieme al backup. Conserva i dati PostgreSQL nel volume Compose `pgdata`, preservato da `docker compose down`; `down -v` rimuoverebbe quel volume.
 
