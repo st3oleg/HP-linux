@@ -15,3 +15,9 @@ Il programma riusa l'identità se è già configurata come Rover. Lascia intatti
 La scheda passa a online quando il software Rover, configurato per l'invio dei dati all'hub, riceve la prima conferma di acquisizione. Questa procedura prepara l'hub. Il collaudo sul Raspberry si esegue dopo l'installazione del codice Rover predisposto per l'invio.
 
 La scheda usa l'ultimo campione di stato per posizione, ora GNSS, FIX e RTCM. L'ultimo evento rilevato può essere un indice missione. La posizione eventualmente rimasta in memoria resta associata al suo orario originale.
+
+## Collegamento alla pagina diretta
+
+Per aggiungere il collegamento, ripeti la registrazione con `--dashboard-url` seguito dall'URL diretto del Rover, per esempio `http://INDIRIZZO-ROVER:8080/autopilota.html`. Ometti `--output` se hai già creato il file di credenziali. Applica poi la configurazione al servizio web come sopra. Usa `--clear-dashboard-url` per rimuovere il collegamento.
+
+Il link apre la pagina del Rover in una nuova scheda attraverso il collegamento diretto dal browser. Il collaudo della latenza richiede il Rover acceso.

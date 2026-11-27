@@ -125,6 +125,7 @@ def create_app():
                     "received_at": row["received_at"].isoformat() if row else None,
                     "event": row["event"] if row else None,
                     "status_event": row["status_event"] if row else None,
+                    "dashboard_url": device.get("dashboard_url") if device["device_type"] == "rover" else None,
                 }
             )
         return jsonify(devices=results, stale_after_seconds=stale_after)

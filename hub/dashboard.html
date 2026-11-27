@@ -75,6 +75,23 @@ function render(device) {
     details.append(element('dt', label), element('dd', value));
   }
   card.append(title, summary, details);
+  if (device.device_type === 'rover' && typeof device.dashboard_url === 'string') {
+    try {
+      const url = new URL(device.dashboard_url);
+      if (['http:', 'https:'].includes(url.protocol) && !url.username && !url.password
+          && url.pathname === '/autopilota.html' && !url.search && !url.hash) {
+        const link = element('a', 'Apri la pagina del Rover');
+        link.href = url.href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        const actions = document.createElement('p');
+        actions.append(link);
+        card.append(actions);
+      }
+    } catch {
+      // Una configurazione locale non valida non impedisce di leggere lo stato.
+    }
+  }
   return card;
 }
 
