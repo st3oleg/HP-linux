@@ -13,3 +13,5 @@ sudo docker compose --profile base up -d --wait --no-deps web
 Il programma riusa l'identità se è già configurata come Rover. Lascia intatti gli altri dispositivi. Trasferisci il file di credenziali direttamente al Rover tramite un canale privato e caricalo nell'ambiente del servizio Rover. Il file contiene il token e va tenuto fuori dal repository.
 
 La scheda passa a online quando il software Rover, configurato per l'invio dei dati all'hub, riceve la prima conferma di acquisizione. Questa procedura prepara l'hub. Il collaudo sul Raspberry si esegue dopo l'installazione del codice Rover predisposto per l'invio.
+
+La scheda usa l'ultimo campione di stato per posizione, ora GNSS, FIX e RTCM. L'ultimo evento rilevato può essere un indice missione. La posizione eventualmente rimasta in memoria resta associata al suo orario originale.

@@ -91,10 +91,22 @@ def create_app():
         with connect() as conn:
             rows = conn.execute(
                 """
-                SELECT DISTINCT ON (device_id) device_id, received_at, event
-                FROM hub_events
-                WHERE device_id = ANY(%s)
-                ORDER BY device_id, received_at DESC, boot_id DESC, sequence DESC
+                SELECT ids.device_id, latest.received_at, latest.event,
+                       sample.event AS status_event
+                FROM unnest(%s::text[]) AS ids(device_id)
+                JOIN LATERAL (
+                    SELECT received_at, event FROM hub_events
+                    WHERE device_id = ids.device_id
+                    ORDER BY received_at DESC, boot_id DESC, sequence DESC
+                    LIMIT 1
+                ) AS latest ON true
+                LEFT JOIN LATERAL (
+                    SELECT event FROM hub_events
+                    WHERE device_id = ids.device_id
+                      AND event->>'event_type' IN ('status', 'telemetry')
+                    ORDER BY received_at DESC, boot_id DESC, sequence DESC
+                    LIMIT 1
+                ) AS sample ON true
                 """,
                 (list(devices),),
             ).fetchall()
@@ -112,6 +124,7 @@ def create_app():
                     "age_seconds": round(age, 1) if age is not None else None,
                     "received_at": row["received_at"].isoformat() if row else None,
                     "event": row["event"] if row else None,
+                    "status_event": row["status_event"] if row else None,
                 }
             )
         return jsonify(devices=results, stale_after_seconds=stale_after)

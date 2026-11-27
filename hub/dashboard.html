@@ -41,16 +41,28 @@ function render(device) {
   const summary = element('p', `${type}${simulated ? ' · Simulato' : ''} · ${device.online ? 'Online' : device.received_at ? 'Offline' : 'In attesa di dati'}`);
   summary.className = device.online ? 'online' : 'offline';
   const details = document.createElement('dl');
-  const payload = device.event?.payload;
+  const sample = device.status_event;
+  const payload = sample?.payload;
   const base = payload?.base;
+  const gnss = payload?.gnss;
+  const rtcm = payload?.rtcm;
   const rows = [
     ['Ricezione', time(device.received_at)],
     ['Età alla lettura', device.age_seconds == null ? '—' : `${device.age_seconds} s`],
-    ['Ora misura', time(device.event?.observed_at)],
+    ['Ora misura', time(sample?.observed_at)],
     ['Evento', device.event?.event_type ?? '—'],
-    ['GNSS', typeof payload?.gnss?.rtk_status === 'string' ? payload.gnss.rtk_status : '—'],
-    ['RTCM', typeof payload?.rtcm?.connected === 'boolean' ? (payload.rtcm.connected ? 'Connesso' : 'Disconnesso') : '—'],
+    ['GNSS', typeof gnss?.rtk_status === 'string' ? gnss.rtk_status : '—'],
+    ['RTCM', typeof rtcm?.connected === 'boolean' ? (rtcm.connected ? 'Connesso' : 'Disconnesso') : '—'],
   ];
+  if (device.device_type === 'rover' && gnss) {
+    const hasPosition = Number.isFinite(gnss.lat) && Math.abs(gnss.lat) <= 90
+                     && Number.isFinite(gnss.lon) && Math.abs(gnss.lon) <= 180;
+    rows.push(
+      ['Posizione Rover', hasPosition ? `${gnss.lat}, ${gnss.lon}` : '—'],
+      ['Ora posizione GNSS', Number.isFinite(gnss.fix_timestamp) ? time(gnss.fix_timestamp * 1000) : '—'],
+      ['Età RTCM alla misura', Number.isFinite(rtcm?.age_seconds) ? `${rtcm.age_seconds.toFixed(1)} s` : '—'],
+    );
+  }
   if (base) {
     const pos = base.position;
     rows.push(
