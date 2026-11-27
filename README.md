@@ -10,8 +10,9 @@ Per aggiornare un'installazione esistente, esegui questi comandi dalla radice de
 
 ```bash
 git pull --ff-only
-cd hub
-sudo docker compose up -d --build --wait
+bash hub/start-hub.sh
 ```
+
+Per creare l'icona **Avvia Hub Terminator** sul Desktop di Ubuntu, esegui una volta `bash hub/start-hub.sh --install-desktop` e abilita **Consenti avvio** dal menu dell'icona, se richiesto. L'icona usa la configurazione locale e mostra l'esito nel terminale.
 
 La configurazione locale in `hub/.env` resta sull'HP. PostgreSQL conserva gli eventi nel volume Docker `pgdata`.
