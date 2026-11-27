@@ -4,6 +4,8 @@ Questo repository contiene l'API, PostgreSQL e la dashboard per l'HP con Ubuntu.
 
 Per acquisire dati reali, segui la [guida per collegare la Base RTK](docs/collegare-base.md).
 
+L'hub può anche [registrare un Rover](docs/registrare-rover.md) e assegnargli un token dedicato.
+
 Per aggiornare un'installazione esistente, esegui questi comandi dalla radice del repository sull'HP.
 
 ```bash
