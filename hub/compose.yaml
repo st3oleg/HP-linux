@@ -31,6 +31,7 @@ services:
       PGUSER: hub_ingest
       PGPASSWORD: ${HUB_INGEST_PASSWORD:?Eseguire prima il setup}
       HUB_DEVICES_JSON: ${HUB_DEVICES_JSON:?Eseguire prima il setup}
+      HUB_DISPLAY_NAME: ${HUB_DISPLAY_NAME:-HP Ubuntu}
       HUB_STALE_AFTER_SECONDS: ${HUB_STALE_AFTER_SECONDS:-30}
     ports:
       - "127.0.0.1:8090:8080"

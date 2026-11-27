@@ -54,8 +54,18 @@ fi
 sudo -v
 sudo systemctl start docker
 sudo docker compose --env-file .env --profile base up -d --build --wait
-curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8090/healthz
-printf '\nHub attivo: http://127.0.0.1:8090/\n'
+dashboard_url=http://127.0.0.1:8090/
+curl --fail --silent --show-error --max-time 10 "${dashboard_url}healthz"
+printf '\nHub attivo: %s\n' "$dashboard_url"
+if [[ "${1:-}" == --desktop ]]; then
+    if command -v firefox >/dev/null; then
+        nohup firefox --new-tab "$dashboard_url" </dev/null >/dev/null 2>&1 &
+    elif command -v xdg-open >/dev/null; then
+        nohup xdg-open "$dashboard_url" </dev/null >/dev/null 2>&1 &
+    else
+        printf 'Apri manualmente %s nel browser.\n' "$dashboard_url"
+    fi
+fi
 printf '\nCollettore Base:\n'
 sudo docker compose --profile base logs --tail 5 base
 if command -v tailscale >/dev/null; then

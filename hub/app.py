@@ -128,7 +128,11 @@ def create_app():
                     "dashboard_url": device.get("dashboard_url") if device["device_type"] == "rover" else None,
                 }
             )
-        return jsonify(devices=results, stale_after_seconds=stale_after)
+        return jsonify(
+            hub={"name": os.environ.get("HUB_DISPLAY_NAME", "HP Ubuntu"), "online": True},
+            devices=results,
+            stale_after_seconds=stale_after,
+        )
 
     @app.post("/api/v1/events")
     def receive_event():

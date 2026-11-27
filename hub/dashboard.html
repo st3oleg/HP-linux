@@ -33,6 +33,14 @@ function element(tag, text) {
   return node;
 }
 
+function renderHub(hub) {
+  const card = document.createElement('article');
+  const state = element('p', hub.online ? 'Hub · Online' : 'Hub · Offline');
+  state.className = hub.online ? 'online' : 'offline';
+  card.append(element('h2', hub.name), state);
+  return card;
+}
+
 function render(device) {
   const card = document.createElement('article');
   const title = element('h2', device.device_id);
@@ -100,7 +108,9 @@ async function refresh() {
     const response = await fetch('/api/v1/devices', { signal: AbortSignal.timeout(8000) });
     if (!response.ok) throw new Error('Hub non raggiungibile');
     const report = await response.json();
-    devices.replaceChildren(...report.devices.map(render));
+    const cards = report.devices.map(render);
+    if (report.hub) cards.unshift(renderHub(report.hub));
+    devices.replaceChildren(...cards);
     delete status.dataset.error;
     status.textContent = `Ultimo aggiornamento ${time(Date.now())} · soglia offline ${report.stale_after_seconds} s`;
   } catch {

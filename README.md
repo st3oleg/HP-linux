@@ -13,6 +13,8 @@ git pull --ff-only
 bash hub/start-hub.sh
 ```
 
-Per creare l'icona **Avvia Hub Terminator** sul Desktop di Ubuntu, esegui una volta `bash hub/start-hub.sh --install-desktop` e abilita **Consenti avvio** dal menu dell'icona, se richiesto. L'icona usa la configurazione locale e mostra l'esito nel terminale.
+Per creare l'icona **Avvia Hub Terminator** sul Desktop di Ubuntu, esegui una volta `bash hub/start-hub.sh --install-desktop` e abilita **Consenti avvio** dal menu dell'icona, se richiesto. L'icona usa la configurazione locale, mostra l'esito nel terminale e apre la dashboard in Firefox quando l'hub risponde.
+
+La dashboard mostra la scheda **HP Ubuntu** quando il servizio web riesce a leggere PostgreSQL. Per cambiare il nome della scheda, imposta `HUB_DISPLAY_NAME` nel file locale `hub/.env`.
 
 La configurazione locale in `hub/.env` resta sull'HP. PostgreSQL conserva gli eventi nel volume Docker `pgdata`.
