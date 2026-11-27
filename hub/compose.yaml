@@ -20,6 +20,7 @@ services:
     build:
       context: ..
       dockerfile: hub/Dockerfile
+    image: terminator-hub-web:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -38,5 +39,17 @@ services:
       interval: 4s
       timeout: 5s
       retries: 10
+  base:
+    image: terminator-hub-web:latest
+    profiles: ["base"]
+    command: ["python", "-u", "collect_base.py"]
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+        restart: true
+    environment:
+      HUB_BASE_URL: ${HUB_BASE_URL:-}
+      HUB_BASE_TOKEN: ${HUB_BASE_TOKEN:-}
 volumes:
   pgdata:

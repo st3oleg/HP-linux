@@ -42,6 +42,7 @@ function render(device) {
   summary.className = device.online ? 'online' : 'offline';
   const details = document.createElement('dl');
   const payload = device.event?.payload;
+  const base = payload?.base;
   const rows = [
     ['Ricezione', time(device.received_at)],
     ['Età alla lettura', device.age_seconds == null ? '—' : `${device.age_seconds} s`],
@@ -50,6 +51,14 @@ function render(device) {
     ['GNSS', typeof payload?.gnss?.rtk_status === 'string' ? payload.gnss.rtk_status : '—'],
     ['RTCM', typeof payload?.rtcm?.connected === 'boolean' ? (payload.rtcm.connected ? 'Connesso' : 'Disconnesso') : '—'],
   ];
+  if (base) {
+    const pos = base.position;
+    rows.push(
+      ['Posizione Base', pos ? `${pos.lat}, ${pos.lon}` : '—'],
+      ['Origine', base.source ?? '—'],
+      ['Qualità GGA', base.quality ?? 'Non riportata'],
+    );
+  }
   for (const [label, value] of rows) {
     details.append(element('dt', label), element('dd', value));
   }

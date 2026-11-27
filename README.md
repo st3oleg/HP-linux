@@ -2,6 +2,8 @@
 
 Questo repository contiene l'API, PostgreSQL e la dashboard per l'HP con Ubuntu. Per installare e collaudare l'hub con Rover e Base simulati, segui la [guida della fase 2](docs/fase-2-hub-ubuntu.md).
 
+Per acquisire dati reali, segui la [guida per collegare la Base RTK](docs/collegare-base.md).
+
 Per aggiornare un'installazione esistente, esegui questi comandi dalla radice del repository sull'HP.
 
 ```bash

@@ -4,5 +4,6 @@
 !hub/requirements.txt
 !hub/app.py
 !hub/dashboard.html
+!hub/collect_base.py
 !schemas/
 !schemas/hub-event-v1.schema.json
