@@ -19,3 +19,9 @@ Il primo comando aggiunge la Base al file locale `.env` e conserva i token già 
 Se la lettura fallisce, verifica che il container possa raggiungere l'API della Base attraverso Tailscale. Dopo la soglia configurata senza eventi, la dashboard mostra la Base offline e conserva l'ultima posizione con il suo orario.
 
 Una volta abilitato il profilo, usa `sudo docker compose --profile base up -d --build --wait` anche per gli aggiornamenti.
+
+## Rimuovere le schede simulate
+
+Quando `base-rtk-01` è online, riesegui `setup_base.py` con lo stesso URL e aggiungi `--remove-demo`. Poi applica la configurazione con `sudo docker compose --profile base up -d --wait`. Le identità demo e i relativi token escono dalla configurazione attiva. Gli eventi già acquisiti restano nel database.
+
+Per aprire la stessa dashboard da un altro PC, segui la [procedura Tailscale Serve](fase-2-hub-ubuntu.md#accesso-da-windows).
