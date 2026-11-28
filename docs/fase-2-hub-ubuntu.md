@@ -1,5 +1,7 @@
 # Fase 2 — Hub Ubuntu in sola lettura
 
+Questa procedura descrive il collaudo iniziale con dispositivi simulati. Per il Rover reale e il pulsante di avvio, usa la [guida operativa dell'HP](registrare-rover.md#avvio-su-richiesta).
+
 L'hub riceve eventi, li conserva in PostgreSQL e mostra l'ultimo stato ricevuto di Rover e Base RTK. I primi due dispositivi sono simulati. La pagina si aggiorna ogni 5 secondi e, dopo 30 secondi senza nuovi eventi, mostra offline. L'ora di ricezione viene assegnata dal database. Il server rimane attivo anche quando chiudi il browser.
 
 ## Avvio sull'HP

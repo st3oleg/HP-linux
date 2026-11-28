@@ -33,6 +33,8 @@ services:
       HUB_DEVICES_JSON: ${HUB_DEVICES_JSON:?Eseguire prima il setup}
       HUB_DISPLAY_NAME: ${HUB_DISPLAY_NAME:-HP Ubuntu}
       HUB_STALE_AFTER_SECONDS: ${HUB_STALE_AFTER_SECONDS:-30}
+    volumes:
+      - mapdata:/app/map-data
     ports:
       - "127.0.0.1:8090:8080"
     healthcheck:
@@ -54,3 +56,4 @@ services:
       HUB_BASE_TOKEN: ${HUB_BASE_TOKEN:-}
 volumes:
   pgdata:
+  mapdata:

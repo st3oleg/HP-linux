@@ -14,6 +14,8 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from werkzeug.exceptions import BadRequest
 
+from map_store import register_map
+
 
 HERE = Path(__file__).resolve().parent
 MAX_BIGINT = 2**63 - 1
@@ -94,7 +96,7 @@ def create_app():
             rows = conn.execute(
                 """
                 SELECT ids.device_id, latest.received_at, latest.event,
-                       sample.event AS status_event
+                       sample.event AS status_event, sample.received_at AS status_received_at
                 FROM unnest(%s::text[]) AS ids(device_id)
                 JOIN LATERAL (
                     SELECT received_at, event FROM hub_events
@@ -103,7 +105,7 @@ def create_app():
                     LIMIT 1
                 ) AS latest ON true
                 LEFT JOIN LATERAL (
-                    SELECT event FROM hub_events
+                    SELECT event, received_at FROM hub_events
                     WHERE device_id = ids.device_id
                       AND event->>'event_type' IN ('status', 'telemetry')
                     ORDER BY received_at DESC, boot_id DESC, sequence DESC
@@ -127,6 +129,8 @@ def create_app():
                     "received_at": row["received_at"].isoformat() if row else None,
                     "event": row["event"] if row else None,
                     "status_event": row["status_event"] if row else None,
+                    "status_age_seconds": max(0, (now - row["status_received_at"]).total_seconds())
+                    if row and row["status_received_at"] else None,
                     "dashboard_url": device.get("dashboard_url") if device["device_type"] == "rover" else None,
                 }
             )
@@ -135,6 +139,8 @@ def create_app():
             devices=results,
             stale_after_seconds=stale_after,
         )
+
+    register_map(app, HERE, devices, list_devices)
 
     @app.post("/api/v1/devices/<device_id>/open")
     def open_rover(device_id):

@@ -42,4 +42,18 @@ sudo systemctl status terminator-rover.socket terminator-rover.service
 sudo journalctl -u terminator-rover.service -n 50 --no-pager
 ```
 
-Per arrestare il servizio senza consentire un nuovo avvio su richiesta, ferma entrambe le unità con `sudo systemctl stop terminator-rover.socket terminator-rover.service`.
+### Verifica dopo l'installazione
+
+Il 27 novembre 2026 l'operatore ha verificato l'avvio dal pulsante **Apri la pagina del Rover** e il FIX del ricevitore a Rover fermo. Per ripetere la prova, chiudi le pagine Rover che si riconnettono automaticamente, poi ferma solo il servizio sul Raspberry.
+
+```bash
+sudo systemctl stop terminator-rover.service
+systemctl is-active terminator-rover.socket
+systemctl is-active terminator-rover.service
+```
+
+L'esito atteso prima del clic è `active` per il socket e `inactive` per il servizio. Clicca il pulsante nell'Hub e verifica che la pagina si apra. Sulla Mappa Live controlla **Correzioni RTCM** e lo stato RTK.
+
+Se l'Hub segnala **porta chiusa**, verifica che il socket sia attivo. Se systemd risponde `Unit ... not found`, ripeti l'installazione delle unità dal repository Rover. Il pull scarica i sorgenti delle unità. Per caricarle in systemd servono i comandi della sezione precedente.
+
+Per la diagnostica seriale arresta entrambe le unità con `sudo systemctl stop terminator-rover.socket terminator-rover.service`. Al termine, riattiva il socket con `sudo systemctl start terminator-rover.socket`.
