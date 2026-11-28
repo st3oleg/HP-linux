@@ -5,6 +5,12 @@
 <title>Hub dispositivi</title>
 <style>
   :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #111a20; color: #eef4f6; }
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background: linear-gradient(rgb(17 26 32 / 60%), rgb(17 26 32 / 60%)),
+                url("/dashboard-background.png") center / cover no-repeat;
+  }
   main { max-width: 65rem; margin: auto; padding: 2rem 1rem; }
   h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.3rem); }
   #devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }

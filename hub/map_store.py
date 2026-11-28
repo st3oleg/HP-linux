@@ -8,6 +8,12 @@ from urllib.parse import urlsplit
 from flask import Response, jsonify, request, send_file
 
 
+WIDGET_KEYS = {
+    "w_rover_status", "w_rover_alt", "w_rover_imu",
+    "w_base_heartbeat", "w_base_coords",
+}
+
+
 def valid_ring(ring):
     return (
         isinstance(ring, list) and len(ring) >= 4 and ring[0] == ring[-1]
@@ -120,6 +126,36 @@ def register_map(app, here, devices, list_devices):
                     "age_seconds": device["status_age_seconds"],
                 }
         return jsonify(result)
+
+    @app.get("/impostazioni_widgets.html")
+    def widget_settings():
+        return send_file(here / "impostazioni_widgets.html")
+
+    @app.route("/api/v1/map/widgets", methods=["GET", "PATCH"])
+    def widgets():
+        updates = {}
+        if request.method == "PATCH":
+            if request.headers.get("X-Map-Action") != "save-widgets":
+                return jsonify(error="invalid_action"), 403
+            updates = request.get_json(silent=True)
+            if (
+                not isinstance(updates, dict)
+                or not updates
+                or not updates.keys() <= WIDGET_KEYS
+                or any(type(value) is not bool for value in updates.values())
+            ):
+                return jsonify(error="invalid_widget_preferences"), 400
+
+        with closing(connect()) as db, db:
+            db.execute("CREATE TABLE IF NOT EXISTS widget_preferences (name TEXT PRIMARY KEY, visible INTEGER NOT NULL)")
+            if updates:
+                db.executemany(
+                    "INSERT INTO widget_preferences VALUES (?, ?) "
+                    "ON CONFLICT(name) DO UPDATE SET visible = excluded.visible",
+                    updates.items(),
+                )
+            rows = db.execute("SELECT name, visible FROM widget_preferences").fetchall()
+            return jsonify({name: bool(visible) for name, visible in rows})
 
     @app.route("/api/v1/map/perimeters", methods=["GET", "PUT"])
     def perimeters():

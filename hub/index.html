@@ -270,16 +270,15 @@
             const mapLinks = document.querySelectorAll('a[href$=".html"]');
             for (const link of mapLinks) {
                 const href = link.getAttribute('href');
-                if (href === 'impostazioni_widgets.html') {
-                    link.style.display = 'none';
-                } else if (config.roverOrigin) {
+                if (href === 'impostazioni_widgets.html') continue;
+                if (config.roverOrigin) {
                     link.href = new URL(href, config.roverOrigin).href;
                 } else {
                     link.style.display = 'none';
                 }
             }
         }
-        // --- GESTIONE PREFERENZE WIDGET (LOCALSTORAGE) ---
+        // --- VISIBILITA DEI WIDGET ---
         function toggleWidget(id, show) {
             const el = document.getElementById(id);
             if (!el) return;
@@ -290,28 +289,34 @@
             }
         }
 
-        function loadWidgetPreferences() {
-            // Se non è stato impostato esplicitamente a 'false', i widget rover sono true di default
-            const showRovStatus = localStorage.getItem('w_rover_status') !== 'false';
-            const showRovAlt = localStorage.getItem('w_rover_alt') !== 'false';
-            const showRovImu = localStorage.getItem('w_rover_imu') !== 'false';
+        let widgetLoad = 0;
+        async function loadWidgetPreferences() {
+            const currentLoad = ++widgetLoad;
+            try {
+                let preferences = {};
+                if (config.sharedMap) {
+                    const response = await fetch('/api/v1/map/widgets', { signal: AbortSignal.timeout(4000) });
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    preferences = await response.json();
+                }
+                if (currentLoad !== widgetLoad) return;
+                const visible = (key, defaultValue) => config.sharedMap
+                    ? preferences[key] ?? defaultValue
+                    : (localStorage.getItem(key) ?? String(defaultValue)) === 'true';
 
-            toggleWidget('widget-rover-status', showRovStatus);
-            toggleWidget('widget-rover-alt', showRovAlt);
-            toggleWidget('widget-rover-imu', showRovImu);
-
-            // Widget Antenna Base (disattivati di default se null)
-            const showBaseHb = localStorage.getItem('w_base_heartbeat') === 'true';
-            const showBaseCoords = localStorage.getItem('w_base_coords') === 'true';
-
-            toggleWidget('widget-base-heartbeat', showBaseHb);
-            toggleWidget('widget-base-coords', showBaseCoords);
+                toggleWidget('widget-rover-status', visible('w_rover_status', true));
+                toggleWidget('widget-rover-alt', visible('w_rover_alt', true));
+                toggleWidget('widget-rover-imu', visible('w_rover_imu', true));
+                toggleWidget('widget-base-heartbeat', visible('w_base_heartbeat', false));
+                toggleWidget('widget-base-coords', visible('w_base_coords', false));
+            } catch (error) {
+                console.warn('Preferenze widget non disponibili:', error);
+            }
         }
 
-        // Esegui all'avvio e quando la finestra riprende il focus
         loadWidgetPreferences();
         window.addEventListener('focus', loadWidgetPreferences);
-        window.addEventListener('storage', loadWidgetPreferences);
+        if (!config.sharedMap) window.addEventListener('storage', loadWidgetPreferences);
 
         // --- GESTIONE TRASCINAMENTO E RIDIMENSIONAMENTO WIDGET ---
         document.querySelectorAll('.interactive-widget').forEach(widget => {

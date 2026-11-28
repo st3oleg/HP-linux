@@ -21,13 +21,13 @@ La configurazione locale in `hub/.env` resta sull'HP. PostgreSQL conserva gli ev
 
 ## Mappa condivisa
 
-Il pulsante **Mappa** apre `/index.html` sull'HP. I perimetri condivisi sono salvati nel volume Docker `mapdata`. La mappa usa gli ultimi campioni di posizione ricevuti dall'Hub dal Rover e dalla Base. Le pagine operative del Rover restano accessibili tramite i loro indirizzi diretti. I perimetri della mappa condivisa sono per la visualizzazione e non sono inviati al Rover come geofence operativo.
+Il pulsante **Mappa** apre `/index.html` sull'HP. I perimetri e le preferenze di visibilita dei widget sono salvati nel volume Docker `mapdata`. La mappa usa gli ultimi campioni di posizione ricevuti dall'Hub dal Rover e dalla Base. Le pagine operative del Rover restano accessibili tramite i loro indirizzi diretti. I perimetri della mappa condivisa sono per la visualizzazione e non sono inviati al Rover come geofence operativo.
 
 Per aprire la mappa HP anche dall'index di Windows, imposta `hubMapUrl` nel suo `runtime-config.js` con l'URL HTTPS della dashboard restituito da `tailscale serve status`. Sul Rover, dopo aver aggiornato il software, viene riutilizzato `ROVER_HUB_URL` se già configurato. Altrimenti imposta `ROVER_MAP_HUB_URL` con lo stesso indirizzo HTTPS nel servizio del Rover. Se HP non risponde, l'index di partenza usa il suo archivio locale e la sua fonte di telemetria configurata. Per un file aperto direttamente su Windows, imposta anche `apiBaseUrl` per la Base oppure `roverWsUrl` con il WebSocket del Rover. Aggiungi `?locale=1` all'URL dell'index di partenza per aprire direttamente la copia locale.
 
 Per recuperare perimetri già disegnati, apri l'index con `?locale=1` nello stesso browser e allo stesso indirizzo usati in precedenza. Premi **Esporta**, poi apri la mappa dall'Hub e usa **Importa su HP**. L'importazione aggiunge i poligoni e salta quelli con geometria identica. Ripeti dagli altri browser o indirizzi che contengono perimetri da conservare.
 
-La copia `hub/index.html` permette di installare l'Hub in autonomia. Quando modifichi `static/index.html` nel repository Rover, aggiorna anche la copia nell'Hub prima di ricostruire l'immagine.
+Le copie `hub/index.html` e `hub/impostazioni_widgets.html` permettono di installare l'Hub in autonomia. Quando modifichi queste pagine nella cartella `static` del Rover, aggiorna anche le copie nell'Hub prima di ricostruire l'immagine.
 
 ## Sviluppi futuri
 

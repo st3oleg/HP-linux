@@ -84,6 +84,10 @@ def create_app():
     def dashboard():
         return send_file(HERE / "dashboard.html")
 
+    @app.get("/dashboard-background.png")
+    def dashboard_background():
+        return send_file(HERE / "dashboard-background.png", mimetype="image/png")
+
     @app.get("/healthz")
     def health():
         with connect() as conn:

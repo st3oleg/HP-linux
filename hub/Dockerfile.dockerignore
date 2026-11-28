@@ -4,7 +4,9 @@
 !hub/requirements.txt
 !hub/app.py
 !hub/dashboard.html
+!hub/dashboard-background.png
 !hub/index.html
+!hub/impostazioni_widgets.html
 !hub/map_store.py
 !hub/collect_base.py
 !schemas/
