@@ -144,7 +144,7 @@ def create_app():
             stale_after_seconds=stale_after,
         )
 
-    register_map(app, HERE, devices, list_devices)
+    register_map(app, HERE, devices, list_devices, connect)
 
     @app.post("/api/v1/devices/<device_id>/open")
     def open_rover(device_id):

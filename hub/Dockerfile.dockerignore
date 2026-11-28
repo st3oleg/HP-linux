@@ -6,7 +6,12 @@
 !hub/dashboard.html
 !hub/dashboard-background.png
 !hub/index.html
+!hub/scatter_analysis.html
 !hub/impostazioni_widgets.html
+!hub/recordings.py
+!hub/registrazioni.html
+!hub/vineyard.js
+!hub/missioni.html
 !hub/map_store.py
 !hub/collect_base.py
 !schemas/

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrazioni Rover</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #101827; color: #e5edf7 }
+    main { max-width: 64rem; margin: auto; padding: 1rem }
+    nav, .actions { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center }
+    a { color: #83b9ff }
+    button, select { font: inherit; padding: .45rem .7rem; max-width: 100% }
+    #archive { width: min(100%, 38rem) }
+    #map { height: min(55vh, 32rem); margin-top: 1rem; background: #223341 }
+    #status[data-error] { color: #ffbaad }
+  </style>
+</head>
+<body>
+<main>
+  <nav><a href="index.html">Mappa Live</a><a href="registrazioni.html">Vigneto</a></nav>
+  <h1>Registrazioni Rover</h1>
+  <div class="actions">
+    <label for="source">Rover</label><select id="source"></select>
+    <button id="sync" type="button" disabled>Sincronizza nuove missioni</button>
+  </div>
+  <p id="status" role="status">Caricamento archivio HP…</p>
+  <label for="archive">Missioni archiviate su HP</label>
+  <select id="archive"><option value="">Seleziona una missione</option></select>
+  <p id="details"></p>
+  <a id="download" hidden>Scarica JSON</a>
+  <div id="map" aria-label="Traccia della missione"></div>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  const api = '/api/v1/recordings';
+  const headers = { 'X-Map-Action': 'archive-mission' };
+  const map = window.L ? L.map('map').setView([45.9055, 12.438], 15) : null;
+  if (map) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  const trace = map ? L.featureGroup().addTo(map) : null;
+  let records = [];
+  let preview = 0;
+  let busy = false;
+
+  function status(message, error = false) {
+    $('status').textContent = message;
+    $('status').toggleAttribute('data-error', error);
+  }
+
+  async function read(url, options) {
+    const response = await fetch(url, { signal: AbortSignal.timeout(18000), ...options });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    return response.json();
+  }
+
+  function missionUrl(device, filename) {
+    return api + '/' + encodeURIComponent(device) + '/mission?' + new URLSearchParams({ filename });
+  }
+
+  async function loadArchive() {
+    const data = await read(api);
+    records = data.recordings;
+    const previousSource = $('source').value;
+    $('source').replaceChildren(...data.sources.map(id => new Option(id, id)));
+    if (data.sources.includes(previousSource)) $('source').value = previousSource;
+    const previous = $('archive').selectedOptions[0]?.textContent;
+    $('archive').replaceChildren(new Option('Seleziona una missione', ''), ...records.map(
+      (item, index) => new Option(item.title + ' · ' + item.filename + ' · ' + item.device_id, String(index))
+    ));
+    const existing = Array.from($('archive').options).find(option => option.textContent === previous);
+    if (existing) $('archive').value = existing.value;
+    $('sync').disabled = busy || !data.sources.length;
+  }
+
+  $('sync').onclick = async () => {
+    const source = $('source').value;
+    busy = true;
+    $('sync').disabled = true;
+    $('source').disabled = true;
+    let archived = 0;
+    let failed = 0;
+    try {
+      status('Lettura delle missioni sul Rover…');
+      const { missions } = await read(api + '/' + encodeURIComponent(source) + '/source');
+      const saved = new Set(records.filter(item => item.device_id === source).map(item => item.filename));
+      const pending = [...new Set(missions)].filter(filename => !saved.has(filename));
+      for (const [index, filename] of pending.entries()) {
+        status(`Sincronizzazione ${index + 1} di ${pending.length} · ${filename}`);
+        try {
+          await read(missionUrl(source, filename), { method: 'POST', headers });
+          archived++;
+        } catch (error) {
+          failed++;
+        }
+      }
+      await loadArchive();
+      status(failed ? `${archived} missioni salvate. ${pending.length - archived} ancora da sincronizzare.`
+        : `${archived} nuove missioni archiviate su HP.`, failed > 0);
+    } catch (error) {
+      status('Sincronizzazione non riuscita. Controlla il collegamento con il Rover e riprova.', true);
+    } finally {
+      busy = false;
+      $('source').disabled = false;
+      $('sync').disabled = !$('source').value;
+    }
+  };
+
+  $('archive').onchange = async () => {
+    const session = ++preview;
+    trace?.clearLayers();
+    $('details').textContent = '';
+    $('download').hidden = true;
+    const item = records[$('archive').value];
+    if (!item) return;
+    const url = missionUrl(item.device_id, item.filename);
+    try {
+      const mission = await read(url);
+      if (session !== preview) return;
+      const coordinates = mission.points.filter(point => point && typeof point.lat === 'number'
+        && typeof point.lon === 'number' && Math.abs(point.lat) <= 90 && Math.abs(point.lon) <= 180
+        && (point.lat !== 0 || point.lon !== 0)).map(point => [point.lat, point.lon]);
+      $('details').textContent = `${item.points} campioni · ${coordinates.length} coordinate visualizzabili`;
+      if (trace && coordinates.length) {
+        if (coordinates.length === 1) L.circleMarker(coordinates[0]).addTo(trace);
+        else L.polyline(coordinates, { color: '#348aff' }).addTo(trace);
+        map.fitBounds(trace.getBounds(), { padding: [20, 20], maxZoom: 18 });
+      }
+      $('download').href = url;
+      $('download').download = item.filename;
+      $('download').hidden = false;
+    } catch (error) {
+      if (session === preview) $('details').textContent = 'Missione non leggibile dall’archivio HP.';
+    }
+  };
+
+  loadArchive().then(() => status(records.length
+    ? `${records.length} missioni disponibili anche a Rover spento.`
+    : 'Archivio vuoto. Accendi il Rover e sincronizza le missioni.'))
+    .catch(() => status('Impossibile leggere l’archivio HP.', true));
+</script>
+</body>
+</html>

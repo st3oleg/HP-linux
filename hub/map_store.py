@@ -1,9 +1,12 @@
 import json
 import os
 import sqlite3
+import time
 from contextlib import closing
 from pathlib import Path
 from urllib.parse import urlsplit
+
+from recordings import register_recordings
 
 from flask import Response, jsonify, request, send_file
 
@@ -55,15 +58,18 @@ def valid_collection(collection):
     return True
 
 
-def register_map(app, here, devices, list_devices):
+def register_map(app, here, devices, list_devices, connect_events):
+    rover_ids = sorted(device_id for device_id, device in devices.items() if device["device_type"] == "rover")
     db_path = Path(os.environ.get("HUB_MAP_DB", here / "map-data" / "perimeters.sqlite3"))
 
     def connect():
         return sqlite3.connect(db_path, timeout=3)
 
+    register_recordings(app, here, devices, connect)
+
     @app.errorhandler(sqlite3.Error)
     def storage_unavailable(_error):
-        app.logger.warning("Archivio perimetri non disponibile")
+        app.logger.warning("Archivio mappa non disponibile")
         return jsonify(error="map_storage_unavailable"), 503
 
     @app.get("/index.html")
@@ -73,6 +79,51 @@ def register_map(app, here, devices, list_devices):
     @app.get("/api/v1/map/available")
     def available():
         return Response("terminator-hub-map", headers={"Access-Control-Allow-Origin": "*"})
+
+    @app.get("/scatter_analysis.html")
+    def scatter_analysis():
+        return send_file(here / "scatter_analysis.html")
+
+    @app.get("/api/v1/map/scatter")
+    def scatter_samples():
+        window = request.args.get("window", "live")
+        if window not in ("live", "history"):
+            return jsonify(error="invalid_scatter_window"), 400
+        if not rover_ids:
+            return jsonify(rover_id=None, samples=[])
+        rover_id = rover_ids[0]
+        seconds = 900 if window == "history" else 45
+        now = time.time()
+        with connect_events() as db:
+            rows = db.execute(
+                """
+                SELECT event->'payload'->'gnss' AS gnss
+                FROM hub_events
+                WHERE device_id = %s
+                  AND received_at >= now() - make_interval(secs => %s)
+                  AND event->>'event_type' IN ('status', 'telemetry')
+                ORDER BY received_at DESC, boot_id DESC, sequence DESC
+                LIMIT 3000
+                """,
+                (rover_id, seconds),
+            ).fetchall()
+        samples = {}
+        for row in rows:
+            gnss = row["gnss"]
+            if not isinstance(gnss, dict):
+                continue
+            timestamp, lat, lon = (gnss.get(key) for key in ("fix_timestamp", "lat", "lon"))
+            status = gnss.get("rtk_status")
+            if (
+                type(timestamp) not in (int, float) or not now - seconds <= timestamp <= now + 5
+                or type(lat) not in (int, float) or not -90 <= lat <= 90
+                or type(lon) not in (int, float) or not -180 <= lon <= 180
+                or (lat, lon) == (0, 0)
+                or not isinstance(status, str) or status == "NO FIX"
+            ):
+                continue
+            samples.setdefault(timestamp, {"fix_timestamp": timestamp, "lat": lat, "lon": lon, "rtk_status": status})
+        return jsonify(rover_id=rover_id, samples=[samples[key] for key in sorted(samples)])
 
     @app.get("/runtime-config.js")
     def map_config():
